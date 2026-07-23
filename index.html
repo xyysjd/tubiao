@@ -915,15 +915,15 @@
     }
 
     /**
-     * 删除单个图标：
-     * 1. 删除 icon 图片文件
-     * 2. 扫描 Fang + Yuan 两个 tubiao.json，移除所有 url 指向该图片的条目
-     *    （含跨包引用，例如 Fang.json 指向 Yuan/icon/xxx.png）
+     * 删除单个图标（只动当前图包）：
+     * 1. 删除该图包 icon 图片文件
+     * 2. 仅更新该图包的 tubiao.json，移除 url 指向该图片的条目
+     *    例：删 Fang 不碰 Yuan；删 Yuan 不碰 Fang
      */
     async function deleteIcon(pack, fileName, sha, cardEl) {
       if (!pack || !fileName) return;
       const ok = confirm(
-        `确定删除 ${pack}/icon/${fileName}？\n\n将同时：\n1. 删除仓库中的图片文件\n2. 从 Fang/Yuan 的 tubiao.json 中移除所有指向该图片链接的条目\n\n此操作会直接提交到 GitHub，不可撤销。`
+        `确定删除 ${pack}/icon/${fileName}？\n\n将同时：\n1. 删除 ${pack}/icon 中的图片\n2. 仅从 ${pack}/tubiao.json 移除指向该图片的条目\n\n不会修改另一侧图包。此操作会直接提交到 GitHub，不可撤销。`
       );
       if (!ok) return;
 
@@ -941,43 +941,30 @@
         await deleteContent(imgPath, fileSha, `删除图标 ${pack}/${fileName}`);
         log(`  ✓ 图片已删除`, 'ok');
 
-        // 2) 在两个图包 JSON 里清理所有指向该文件链接的条目
-        //    例：删 Yuan/icon/ziyon.png 时，Fang/tubiao.json 里的引用也要去掉
-        const packsToScan = ['Fang', 'Yuan'];
-        invalidateJson(); // 强制重新拉取，避免用旧缓存
-        let totalRemoved = 0;
+        // 2) 只更新当前图包的 JSON
+        invalidateJson(pack);
+        log(`检查 ${pack}/tubiao.json 中的链接…`, 'info');
+        const raw = await getContent(`${pack}/tubiao.json`);
+        const data = JSON.parse(decodeBase64Utf8(raw.content));
+        const result = removeIconsForFile(data.icons, pack, fileName);
 
-        for (const jsonPack of packsToScan) {
-          log(`检查 ${jsonPack}/tubiao.json 中的链接…`, 'info');
-          // 始终读最新内容
-          const raw = await getContent(`${jsonPack}/tubiao.json`);
-          const data = JSON.parse(decodeBase64Utf8(raw.content));
-          const result = removeIconsForFile(data.icons, pack, fileName);
-
-          if (result.removed > 0) {
-            data.icons = result.icons;
-            log(
-              `  ${jsonPack}: 移除 ${result.removed} 条 → ${result.removedNames.join(', ')}`,
-              'info'
-            );
-            await writeJsonPack(
-              jsonPack,
-              data,
-              `从 ${jsonPack}/tubiao.json 移除指向 ${pack}/icon/${fileName} 的条目`
-            );
-            totalRemoved += result.removed;
-          } else {
-            log(`  ${jsonPack}: 无指向该图片的条目`, 'info');
-            // 仍刷新缓存
-            jsonCache[jsonPack] = { data, sha: raw.sha, path: `${jsonPack}/tubiao.json` };
-          }
+        if (result.removed > 0) {
+          data.icons = result.icons;
+          log(
+            `  ${pack}: 移除 ${result.removed} 条 → ${result.removedNames.join(', ')}`,
+            'info'
+          );
+          await writeJsonPack(
+            pack,
+            data,
+            `从 ${pack}/tubiao.json 移除 ${fileName}`
+          );
+        } else {
+          log(`  ${pack}/tubiao.json 中未找到指向该图片的条目，跳过 JSON 更新`, 'warn');
+          jsonCache[pack] = { data, sha: raw.sha, path: `${pack}/tubiao.json` };
         }
 
-        if (totalRemoved === 0) {
-          log('警告：两个 JSON 中都未找到指向该图片的链接条目', 'warn');
-        }
-
-        log(`删除完成：${pack}/${fileName}（共清理 ${totalRemoved} 条 JSON 链接）`, 'ok');
+        log(`删除完成：${pack}/${fileName}（清理 ${result.removed} 条 JSON 链接）`, 'ok');
         setStatus('ok', '已删除');
         await refreshGallery();
       } catch (e) {
