@@ -3,22 +3,6 @@
 	"description": "自用图标包，图标按服名或群名命名，按 A-Z 排列，方便查找。Fileball 可在图标搜索框搜索图标名。",
 	"icons": [
 		{
-			"name": "Ash",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Fang/icon/Ash.png"
-		},
-		{
-			"name": "AshPro",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Fang/icon/AshPro.png"
-		},
-		{
-			"name": "Auroramedia",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Fang/icon/Auroramedia.png"
-		},
-		{
-			"name": "Auroramedia1",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Fang/icon/Auroramedia1.png"
-		},
-		{
 			"name": "BTYIN",
 			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Fang/icon/BTYIN.png"
 		},
@@ -81,10 +65,6 @@
 		{
 			"name": "LEVILDE",
 			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Fang/icon/LEVILDE.png"
-		},
-		{
-			"name": "Mihuansenlin",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Fang/icon/Mihuansenlin.png"
 		},
 		{
 			"name": "Msky",
