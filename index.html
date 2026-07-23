@@ -380,6 +380,7 @@
       min-height: 80px;
     }
     .c-item {
+      position: relative;
       background: var(--panel-2);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -397,6 +398,39 @@
       font-size: .72rem;
       color: var(--muted);
       word-break: break-all;
+    }
+    .c-item .del {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,107,122,.45);
+      background: rgba(15,17,21,.85);
+      color: var(--danger);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .12s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .c-item:hover .del,
+    .c-item .del:focus {
+      opacity: 1;
+    }
+    .c-item .del:hover {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+    .c-item.deleting {
+      opacity: .45;
+      pointer-events: none;
     }
     .c-item.empty {
       grid-column: 1 / -1;
@@ -1036,13 +1070,14 @@
      * 1. 删除该图包 icon 图片文件
      * 2. 仅更新该图包的 tubiao.json，移除 url 指向该图片的条目
      *    例：删 Fang 不碰 Yuan；删 Yuan 不碰 Fang
+     * @returns {Promise<boolean>} 是否删除成功
      */
     async function deleteIcon(pack, fileName, sha, cardEl) {
-      if (!pack || !fileName) return;
+      if (!pack || !fileName) return false;
       const ok = confirm(
         `确定删除 ${pack}/icon/${fileName}？\n\n将同时：\n1. 删除 ${pack}/icon 中的图片\n2. 仅从 ${pack}/tubiao.json 移除指向该图片的条目\n\n不会修改另一侧图包。此操作会直接提交到 GitHub，不可撤销。`
       );
-      if (!ok) return;
+      if (!ok) return false;
 
       if (cardEl) cardEl.classList.add('deleting');
       try {
@@ -1083,12 +1118,15 @@
 
         log(`删除完成：${pack}/${fileName}（清理 ${result.removed} 条 JSON 链接）`, 'ok');
         setStatus('ok', '已删除');
-        await refreshGallery();
+        // 刷新一览（若当前在看这个图包）
+        try { await refreshGallery(); } catch (_) {}
+        return true;
       } catch (e) {
         console.error(e);
         log(e.message || String(e), 'err');
         setStatus('err', '删除失败');
         if (cardEl) cardEl.classList.remove('deleting');
+        return false;
       }
     }
 
@@ -1109,16 +1147,25 @@
       window.__gs = setTimeout(refreshGallery, 250);
     });
 
-    // 图标一览：删除按钮（事件委托）
-    $('gallery').addEventListener('click', (e) => {
-      const btn = e.target.closest('.del');
-      if (!btn) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const card = btn.closest('.g-item');
-      if (!card || card.classList.contains('deleting')) return;
-      deleteIcon(card.dataset.pack, card.dataset.file, card.dataset.sha, card);
-    });
+    // 图标一览 / 对比列表：删除按钮（事件委托）
+    function bindDeleteOn(containerId, cardSelector) {
+      $(containerId).addEventListener('click', async (e) => {
+        const btn = e.target.closest('.del');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const card = btn.closest(cardSelector);
+        if (!card || card.classList.contains('deleting')) return;
+        const done = await deleteIcon(card.dataset.pack, card.dataset.file, card.dataset.sha, card);
+        // 删除成功且已做过对比时，自动刷新对比结果
+        if (done && compareCache) {
+          await runCompare();
+        }
+      });
+    }
+    bindDeleteOn('gallery', '.g-item');
+    bindDeleteOn('onlyFangList', '.c-item');
+    bindDeleteOn('onlyYuanList', '.c-item');
 
     // —— 图标对比 ——
     /** 缓存两侧 icon 文件列表：{ Fang: [{name, stem, sha}], Yuan: [...] } */
@@ -1157,7 +1204,11 @@
         const div = document.createElement('div');
         div.className = 'c-item';
         div.title = item.name;
+        div.dataset.pack = pack;
+        div.dataset.file = item.name;
+        div.dataset.sha = item.sha || '';
         div.innerHTML =
+          `<button type="button" class="del" title="删除 ${escapeAttr(item.name)}" aria-label="删除 ${escapeAttr(item.stem)}">×</button>` +
           `<img src="${url}" alt="${escapeAttr(item.stem)}" loading="lazy" />` +
           `<div class="name">${escapeAttr(item.stem)}</div>`;
         el.appendChild(div);
