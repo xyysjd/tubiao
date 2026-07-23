@@ -3,6 +3,10 @@
 	"description": "自用图标包，图标按服名或群名命名，按 A-Z 排列，方便查找。Fileball 可在图标搜索框搜索图标名。",
 	"icons": [
 		{
+			"name": "AAA",
+			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Fang/icon/AAA.png"
+		},
+		{
 			"name": "BTYIN",
 			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Fang/icon/BTYIN.png"
 		},
