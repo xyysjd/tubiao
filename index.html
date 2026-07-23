@@ -273,6 +273,11 @@
       text-align: center;
       cursor: default;
     }
+    .g-item.selected,
+    .c-item.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(91,140,255,.25);
+    }
     .g-item img {
       width: 64px; height: 64px;
       object-fit: cover;
@@ -286,7 +291,19 @@
       word-break: break-all;
     }
     .g-item.own .name { color: var(--accent-2); }
-    .g-item .del {
+    .pick {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      z-index: 2;
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .g-item .del,
+    .c-item .del {
       position: absolute;
       top: 4px;
       right: 4px;
@@ -308,12 +325,15 @@
       box-shadow: 0 2px 8px rgba(0,0,0,.35);
     }
     .g-item .del:hover,
-    .g-item .del:focus {
+    .g-item .del:focus,
+    .c-item .del:hover,
+    .c-item .del:focus {
       background: var(--danger);
       color: #fff;
       border-color: var(--danger);
     }
-    .g-item.deleting {
+    .g-item.deleting,
+    .c-item.deleting {
       opacity: .45;
       pointer-events: none;
     }
@@ -397,37 +417,6 @@
       color: var(--muted);
       word-break: break-all;
     }
-    .c-item .del {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      z-index: 2;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,107,122,.55);
-      background: rgba(15,17,21,.92);
-      color: var(--danger);
-      font-size: 16px;
-      line-height: 1;
-      cursor: pointer;
-      opacity: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,.35);
-    }
-    .c-item .del:hover,
-    .c-item .del:focus {
-      background: var(--danger);
-      color: #fff;
-      border-color: var(--danger);
-    }
-    .c-item.deleting {
-      opacity: .45;
-      pointer-events: none;
-    }
     .c-item.empty {
       grid-column: 1 / -1;
       color: var(--muted);
@@ -435,6 +424,28 @@
       padding: 20px;
       border-style: dashed;
     }
+    .batch-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 10px;
+    }
+    .batch-bar .sel-count {
+      font-size: .82rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+    .batch-bar label.chk {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: .85rem;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .batch-bar label.chk input { accent-color: var(--accent); }
     .hint {
       margin-top: 10px;
       color: var(--muted);
@@ -525,7 +536,13 @@
           <input id="gallerySearch" type="text" placeholder="搜索名称…" />
           <button class="ghost" type="button" id="btnRefreshGallery">刷新</button>
         </div>
-        <p class="hint" id="galleryMeta">连接后可加载 icon 目录与 JSON 条目。悬停图标可删除（同步移除 JSON 条目）。</p>
+        <div class="batch-bar" id="galleryBatchBar">
+          <label class="chk"><input type="checkbox" id="gallerySelectAll" /> 全选</label>
+          <button class="ghost" type="button" id="btnGalleryInvert">反选</button>
+          <button class="danger" type="button" id="btnGalleryDeleteSel">删除选中</button>
+          <span class="sel-count" id="gallerySelCount">已选 0</span>
+        </div>
+        <p class="hint" id="galleryMeta">连接后可加载 icon 目录与 JSON 条目。勾选后可批量删除。</p>
         <div class="gallery" id="gallery"></div>
       </section>
     </div>
@@ -548,12 +565,26 @@
       <div class="compare-cols" style="margin-top:14px">
         <div class="compare-col">
           <h3>仅 Fang 有 <span class="count" id="onlyFangCount">—</span></h3>
+          <div class="batch-bar">
+            <label class="chk"><input type="checkbox" id="fangSelectAll" /> 全选</label>
+            <button class="ghost" type="button" id="btnFangInvert">反选</button>
+            <button class="danger" type="button" id="btnFangDeleteSel">删除选中</button>
+            <button class="danger" type="button" id="btnFangDeleteAll">删除全部</button>
+            <span class="sel-count" id="fangSelCount">已选 0</span>
+          </div>
           <div class="compare-list" id="onlyFangList">
             <div class="c-item empty">点「开始对比」加载</div>
           </div>
         </div>
         <div class="compare-col">
           <h3>仅 Yuan 有 <span class="count" id="onlyYuanCount">—</span></h3>
+          <div class="batch-bar">
+            <label class="chk"><input type="checkbox" id="yuanSelectAll" /> 全选</label>
+            <button class="ghost" type="button" id="btnYuanInvert">反选</button>
+            <button class="danger" type="button" id="btnYuanDeleteSel">删除选中</button>
+            <button class="danger" type="button" id="btnYuanDeleteAll">删除全部</button>
+            <span class="sel-count" id="yuanSelCount">已选 0</span>
+          </div>
           <div class="compare-list" id="onlyYuanList">
             <div class="c-item empty">点「开始对比」加载</div>
           </div>
@@ -1037,7 +1068,7 @@
         } catch (_) {}
 
         if (q) icons = icons.filter((f) => f.name.toLowerCase().includes(q));
-        $('galleryMeta').textContent = `${pack}/icon 共 ${files.filter(f=>f.type==='file').length} 个文件，展示 ${icons.length} 个 · 悬停点 × 删除`;
+        $('galleryMeta').textContent = `${pack}/icon 共 ${files.filter(f=>f.type==='file').length} 个文件，展示 ${icons.length} 个 · 勾选后可批量删除`;
 
         const { owner, name } = ownerRepo();
         const { branch } = getConfig();
@@ -1051,79 +1082,213 @@
           el.dataset.file = f.name;
           el.dataset.sha = f.sha || '';
           el.innerHTML =
+            `<input type="checkbox" class="pick" title="选择" aria-label="选择 ${escapeAttr(stem)}" />` +
             `<button type="button" class="del" title="删除 ${escapeAttr(f.name)}" aria-label="删除 ${escapeAttr(stem)}">×</button>` +
             `<img src="${url}" alt="${escapeAttr(stem)}" loading="lazy" />` +
             `<div class="name">${escapeAttr(stem)}</div>`;
           gallery.appendChild(el);
         }
+        $('gallerySelectAll').checked = false;
+        updateSelCount('gallery', 'gallerySelCount', 'gallerySelectAll');
       } catch (e) {
         $('galleryMeta').textContent = e.message || String(e);
       }
     }
 
     /**
-     * 删除单个图标（只动当前图包）：
-     * 1. 删除该图包 icon 图片文件
-     * 2. 仅更新该图包的 tubiao.json，移除 url 指向该图片的条目
-     *    例：删 Fang 不碰 Yuan；删 Yuan 不碰 Fang
-     * @returns {Promise<boolean>} 是否删除成功
+     * 静默删除单个图片文件（不含确认、不含 JSON 更新）
      */
-    async function deleteIcon(pack, fileName, sha, cardEl) {
-      if (!pack || !fileName) return false;
-      const ok = confirm(
-        `确定删除 ${pack}/icon/${fileName}？\n\n将同时：\n1. 删除 ${pack}/icon 中的图片\n2. 仅从 ${pack}/tubiao.json 移除指向该图片的条目\n\n不会修改另一侧图包。此操作会直接提交到 GitHub，不可撤销。`
-      );
-      if (!ok) return false;
+    async function deleteImageFile(pack, fileName, sha) {
+      let fileSha = sha;
+      const imgPath = `${pack}/icon/${fileName}`;
+      if (!fileSha) {
+        const existing = await getContent(imgPath);
+        fileSha = existing.sha;
+      }
+      await deleteContent(imgPath, fileSha, `删除图标 ${pack}/${fileName}`);
+    }
 
-      if (cardEl) cardEl.classList.add('deleting');
+    /**
+     * 批量删除：同一图包的多个文件只写一次 JSON。
+     * @param {{pack:string,file:string,sha?:string,el?:HTMLElement}[]} items
+     * @param {{confirm?: boolean}} opts
+     * @returns {Promise<boolean>}
+     */
+    async function deleteIconsBatch(items, opts = {}) {
+      const list = (items || []).filter((i) => i && i.pack && i.file);
+      if (!list.length) {
+        log('没有选中的图标', 'warn');
+        return false;
+      }
+
+      // 按图包分组
+      const byPack = new Map();
+      for (const it of list) {
+        if (!byPack.has(it.pack)) byPack.set(it.pack, []);
+        byPack.get(it.pack).push(it);
+      }
+
+      const summary = [...byPack.entries()]
+        .map(([p, arr]) => `${p}: ${arr.length} 个`)
+        .join('，');
+
+      if (opts.confirm !== false) {
+        const names = list.slice(0, 15).map((i) => `${i.pack}/${i.file}`).join('\n');
+        const more = list.length > 15 ? `\n… 另有 ${list.length - 15} 个` : '';
+        const ok = confirm(
+          `确定批量删除 ${list.length} 个图标？\n（${summary}）\n\n` +
+          `将删除图片，并仅更新对应图包的 tubiao.json。\n不会修改另一侧。\n\n预览：\n${names}${more}`
+        );
+        if (!ok) return false;
+      }
+
+      list.forEach((it) => it.el && it.el.classList.add('deleting'));
+
+      let okCount = 0;
+      let failCount = 0;
+
       try {
-        // 1) 删除图片（若未带 sha 则先查）
-        let fileSha = sha;
-        const imgPath = `${pack}/icon/${fileName}`;
-        if (!fileSha) {
-          log(`查询 ${imgPath} …`, 'info');
-          const existing = await getContent(imgPath);
-          fileSha = existing.sha;
+        for (const [pack, packItems] of byPack) {
+          log(`批量删除 ${pack}：${packItems.length} 个文件…`, 'info');
+          const deletedFiles = [];
+
+          for (const it of packItems) {
+            try {
+              log(`  删除 ${pack}/icon/${it.file} …`, 'info');
+              await deleteImageFile(pack, it.file, it.sha);
+              log(`    ✓ 已删除`, 'ok');
+              deletedFiles.push(it.file);
+              okCount++;
+            } catch (e) {
+              failCount++;
+              log(`    ✗ ${it.file}: ${e.message || e}`, 'err');
+            }
+          }
+
+          if (!deletedFiles.length) continue;
+
+          // 该图包 JSON 只写一次
+          invalidateJson(pack);
+          log(`更新 ${pack}/tubiao.json（清理 ${deletedFiles.length} 个文件的链接）…`, 'info');
+          const raw = await getContent(`${pack}/tubiao.json`);
+          let data = JSON.parse(decodeBase64Utf8(raw.content));
+          let totalRemoved = 0;
+          const removedNames = [];
+          for (const fileName of deletedFiles) {
+            const result = removeIconsForFile(data.icons, pack, fileName);
+            data.icons = result.icons;
+            totalRemoved += result.removed;
+            removedNames.push(...result.removedNames);
+          }
+          if (totalRemoved > 0) {
+            await writeJsonPack(
+              pack,
+              data,
+              `批量从 ${pack}/tubiao.json 移除 ${deletedFiles.length} 个图标`
+            );
+            log(`  ✓ JSON 移除 ${totalRemoved} 条：${removedNames.join(', ')}`, 'ok');
+          } else {
+            log(`  ${pack}/tubiao.json 无对应条目，跳过`, 'warn');
+            jsonCache[pack] = { data, sha: raw.sha, path: `${pack}/tubiao.json` };
+          }
         }
-        log(`删除 ${imgPath} …`, 'info');
-        await deleteContent(imgPath, fileSha, `删除图标 ${pack}/${fileName}`);
-        log(`  ✓ 图片已删除`, 'ok');
 
-        // 2) 只更新当前图包的 JSON
-        invalidateJson(pack);
-        log(`检查 ${pack}/tubiao.json 中的链接…`, 'info');
-        const raw = await getContent(`${pack}/tubiao.json`);
-        const data = JSON.parse(decodeBase64Utf8(raw.content));
-        const result = removeIconsForFile(data.icons, pack, fileName);
-
-        if (result.removed > 0) {
-          data.icons = result.icons;
-          log(
-            `  ${pack}: 移除 ${result.removed} 条 → ${result.removedNames.join(', ')}`,
-            'info'
-          );
-          await writeJsonPack(
-            pack,
-            data,
-            `从 ${pack}/tubiao.json 移除 ${fileName}`
-          );
-        } else {
-          log(`  ${pack}/tubiao.json 中未找到指向该图片的条目，跳过 JSON 更新`, 'warn');
-          jsonCache[pack] = { data, sha: raw.sha, path: `${pack}/tubiao.json` };
-        }
-
-        log(`删除完成：${pack}/${fileName}（清理 ${result.removed} 条 JSON 链接）`, 'ok');
-        setStatus('ok', '已删除');
-        // 刷新一览（若当前在看这个图包）
+        log(`批量删除完成：成功 ${okCount}，失败 ${failCount}`, failCount ? 'warn' : 'ok');
+        setStatus(failCount ? 'err' : 'ok', failCount ? '部分失败' : '批量删除完成');
         try { await refreshGallery(); } catch (_) {}
-        return true;
+        if (compareCache) {
+          try { await runCompare(); } catch (_) {}
+        }
+        return okCount > 0;
       } catch (e) {
         console.error(e);
         log(e.message || String(e), 'err');
-        setStatus('err', '删除失败');
-        if (cardEl) cardEl.classList.remove('deleting');
+        setStatus('err', '批量删除失败');
+        list.forEach((it) => it.el && it.el.classList.remove('deleting'));
         return false;
       }
+    }
+
+    /**
+     * 删除单个图标（只动当前图包）
+     */
+    async function deleteIcon(pack, fileName, sha, cardEl) {
+      if (!pack || !fileName) return false;
+      return deleteIconsBatch([{ pack, file: fileName, sha, el: cardEl }], { confirm: true });
+    }
+
+    // —— 选择 / 批量工具 ——
+    function getSelectedFrom(containerId, cardSelector) {
+      const root = $(containerId);
+      return Array.from(root.querySelectorAll(`${cardSelector}`))
+        .filter((card) => {
+          const cb = card.querySelector('.pick');
+          return cb && cb.checked;
+        })
+        .map((card) => ({
+          pack: card.dataset.pack,
+          file: card.dataset.file,
+          sha: card.dataset.sha || '',
+          el: card,
+        }));
+    }
+
+    function getAllFrom(containerId, cardSelector) {
+      const root = $(containerId);
+      return Array.from(root.querySelectorAll(`${cardSelector}`))
+        .filter((card) => card.dataset.file)
+        .map((card) => ({
+          pack: card.dataset.pack,
+          file: card.dataset.file,
+          sha: card.dataset.sha || '',
+          el: card,
+        }));
+    }
+
+    function updateSelCount(containerId, countId, selectAllId) {
+      const root = $(containerId);
+      const cards = Array.from(root.querySelectorAll('[data-file]'));
+      const checked = cards.filter((c) => c.querySelector('.pick')?.checked);
+      cards.forEach((c) => {
+        const on = !!c.querySelector('.pick')?.checked;
+        c.classList.toggle('selected', on);
+      });
+      if ($(countId)) $(countId).textContent = `已选 ${checked.length}`;
+      if (selectAllId && $(selectAllId)) {
+        $(selectAllId).checked = cards.length > 0 && checked.length === cards.length;
+        $(selectAllId).indeterminate = checked.length > 0 && checked.length < cards.length;
+      }
+    }
+
+    function setAllPicks(containerId, checked) {
+      $(containerId).querySelectorAll('.pick').forEach((cb) => {
+        cb.checked = checked;
+      });
+    }
+
+    function invertPicks(containerId) {
+      $(containerId).querySelectorAll('.pick').forEach((cb) => {
+        cb.checked = !cb.checked;
+      });
+    }
+
+    function bindPickContainer(containerId, countId, selectAllId, cardSelector) {
+      const root = $(containerId);
+      root.addEventListener('change', (e) => {
+        if (e.target.classList.contains('pick')) {
+          updateSelCount(containerId, countId, selectAllId);
+        }
+      });
+      // 点击卡片空白区域切换选中（避开按钮/复选框）
+      root.addEventListener('click', (e) => {
+        if (e.target.closest('.del') || e.target.closest('.pick')) return;
+        const card = e.target.closest(cardSelector);
+        if (!card) return;
+        const cb = card.querySelector('.pick');
+        if (!cb) return;
+        cb.checked = !cb.checked;
+        updateSelCount(containerId, countId, selectAllId);
+      });
     }
 
     // —— 事件 ——
@@ -1143,7 +1308,7 @@
       window.__gs = setTimeout(refreshGallery, 250);
     });
 
-    // 图标一览 / 对比列表：删除按钮（事件委托）
+    // 图标一览 / 对比列表：删除与选择
     function bindDeleteOn(containerId, cardSelector) {
       $(containerId).addEventListener('click', async (e) => {
         const btn = e.target.closest('.del');
@@ -1152,19 +1317,65 @@
         e.stopPropagation();
         const card = btn.closest(cardSelector);
         if (!card || card.classList.contains('deleting')) return;
-        const done = await deleteIcon(card.dataset.pack, card.dataset.file, card.dataset.sha, card);
-        // 删除成功且已做过对比时，自动刷新对比结果
-        if (done && compareCache) {
-          await runCompare();
-        }
+        await deleteIcon(card.dataset.pack, card.dataset.file, card.dataset.sha, card);
       });
     }
     bindDeleteOn('gallery', '.g-item');
     bindDeleteOn('onlyFangList', '.c-item');
     bindDeleteOn('onlyYuanList', '.c-item');
 
+    bindPickContainer('gallery', 'gallerySelCount', 'gallerySelectAll', '.g-item');
+    bindPickContainer('onlyFangList', 'fangSelCount', 'fangSelectAll', '.c-item');
+    bindPickContainer('onlyYuanList', 'yuanSelCount', 'yuanSelectAll', '.c-item');
+
+    $('gallerySelectAll').addEventListener('change', (e) => {
+      setAllPicks('gallery', e.target.checked);
+      updateSelCount('gallery', 'gallerySelCount', 'gallerySelectAll');
+    });
+    $('fangSelectAll').addEventListener('change', (e) => {
+      setAllPicks('onlyFangList', e.target.checked);
+      updateSelCount('onlyFangList', 'fangSelCount', 'fangSelectAll');
+    });
+    $('yuanSelectAll').addEventListener('change', (e) => {
+      setAllPicks('onlyYuanList', e.target.checked);
+      updateSelCount('onlyYuanList', 'yuanSelCount', 'yuanSelectAll');
+    });
+
+    $('btnGalleryInvert').addEventListener('click', () => {
+      invertPicks('gallery');
+      updateSelCount('gallery', 'gallerySelCount', 'gallerySelectAll');
+    });
+    $('btnFangInvert').addEventListener('click', () => {
+      invertPicks('onlyFangList');
+      updateSelCount('onlyFangList', 'fangSelCount', 'fangSelectAll');
+    });
+    $('btnYuanInvert').addEventListener('click', () => {
+      invertPicks('onlyYuanList');
+      updateSelCount('onlyYuanList', 'yuanSelCount', 'yuanSelectAll');
+    });
+
+    $('btnGalleryDeleteSel').addEventListener('click', async () => {
+      await deleteIconsBatch(getSelectedFrom('gallery', '.g-item'));
+    });
+    $('btnFangDeleteSel').addEventListener('click', async () => {
+      await deleteIconsBatch(getSelectedFrom('onlyFangList', '.c-item'));
+    });
+    $('btnYuanDeleteSel').addEventListener('click', async () => {
+      await deleteIconsBatch(getSelectedFrom('onlyYuanList', '.c-item'));
+    });
+    $('btnFangDeleteAll').addEventListener('click', async () => {
+      const all = getAllFrom('onlyFangList', '.c-item');
+      if (!all.length) { log('仅 Fang 列表为空', 'warn'); return; }
+      await deleteIconsBatch(all);
+    });
+    $('btnYuanDeleteAll').addEventListener('click', async () => {
+      const all = getAllFrom('onlyYuanList', '.c-item');
+      if (!all.length) { log('仅 Yuan 列表为空', 'warn'); return; }
+      await deleteIconsBatch(all);
+    });
+
     // —— 图标对比 ——
-    /** 缓存两侧 icon 文件列表：{ Fang: [{name, stem, sha}], Yuan: [...] } */
+    /** 缓存两侧 icon 文件列表 */
     let compareCache = null;
 
     function stemOf(fileName) {
@@ -1204,6 +1415,7 @@
         div.dataset.file = item.name;
         div.dataset.sha = item.sha || '';
         div.innerHTML =
+          `<input type="checkbox" class="pick" title="选择" aria-label="选择 ${escapeAttr(item.stem)}" />` +
           `<button type="button" class="del" title="删除 ${escapeAttr(item.name)}" aria-label="删除 ${escapeAttr(item.stem)}">×</button>` +
           `<img src="${url}" alt="${escapeAttr(item.stem)}" loading="lazy" />` +
           `<div class="name">${escapeAttr(item.stem)}</div>`;
@@ -1227,6 +1439,10 @@
       $('onlyYuanCount').textContent = `${yuanView.length}${q ? ` / ${onlyYuan.length}` : ''}`;
       renderCompareList('onlyFangList', fangView, 'Fang');
       renderCompareList('onlyYuanList', yuanView, 'Yuan');
+      if ($('fangSelectAll')) $('fangSelectAll').checked = false;
+      if ($('yuanSelectAll')) $('yuanSelectAll').checked = false;
+      updateSelCount('onlyFangList', 'fangSelCount', 'fangSelectAll');
+      updateSelCount('onlyYuanList', 'yuanSelCount', 'yuanSelectAll');
 
       $('compareStats').innerHTML = `
         <span class="stat">Fang 共 <b>${fangTotal}</b></span>
