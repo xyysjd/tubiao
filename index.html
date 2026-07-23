@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>图标管理 · tubiao</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1e2330;
+      --border: #2a3142;
+      --text: #e8ecf4;
+      --muted: #8b95a8;
+      --accent: #5b8cff;
+      --accent-2: #3dd68c;
+      --danger: #ff6b7a;
+      --warn: #f0b429;
+      --radius: 14px;
+      --shadow: 0 12px 40px rgba(0,0,0,.35);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #1a2744 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #1a3a2e 0%, transparent 50%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 18px 80px;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: .02em;
+    }
+    header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      font-size: .85rem;
+      color: var(--muted);
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted);
+    }
+    .dot.ok { background: var(--accent-2); box-shadow: 0 0 10px var(--accent-2); }
+    .dot.err { background: var(--danger); }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: linear-gradient(180deg, var(--panel) 0%, #141820 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+    label {
+      display: block;
+      font-size: .82rem;
+      color: var(--muted);
+      margin: 12px 0 6px;
+    }
+    input[type="text"], input[type="password"], select, textarea {
+      width: 100%;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: .95rem;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(91,140,255,.18);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 560px) {
+      .row { grid-template-columns: 1fr; }
+    }
+    .drop {
+      margin-top: 12px;
+      border: 1.5px dashed #3a4660;
+      border-radius: 12px;
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255,255,255,.02);
+      cursor: pointer;
+      transition: .15s ease;
+    }
+    .drop:hover, .drop.drag {
+      border-color: var(--accent);
+      color: var(--text);
+      background: rgba(91,140,255,.06);
+    }
+    .drop strong { color: var(--text); }
+    .file-list {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 360px;
+      overflow: auto;
+    }
+    .file-item {
+      display: grid;
+      grid-template-columns: 52px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+    }
+    .file-item img {
+      width: 52px; height: 52px;
+      object-fit: cover;
+      border-radius: 10px;
+      background: #0b0d12;
+    }
+    .file-item .meta input {
+      margin-top: 4px;
+      padding: 7px 10px;
+      font-size: .88rem;
+    }
+    .file-item .meta small {
+      color: var(--muted);
+      font-size: .75rem;
+    }
+    .file-item button {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+    .file-item button:hover { color: var(--danger); border-color: var(--danger); }
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    button.primary, button.ghost, button.danger {
+      border: none;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: .95rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.primary {
+      background: linear-gradient(135deg, #5b8cff, #4570e6);
+      color: white;
+    }
+    button.primary:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+    button.ghost {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    button.danger {
+      background: rgba(255,107,122,.12);
+      color: var(--danger);
+      border: 1px solid rgba(255,107,122,.35);
+    }
+    .packs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .pack {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      cursor: pointer;
+      user-select: none;
+      font-size: .9rem;
+    }
+    .pack input { accent-color: var(--accent); }
+    .log {
+      margin-top: 14px;
+      background: #0b0d12;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 140px;
+      max-height: 280px;
+      overflow: auto;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: .8rem;
+      white-space: pre-wrap;
+      color: #b7c0d1;
+    }
+    .log .ok { color: var(--accent-2); }
+    .log .err { color: var(--danger); }
+    .log .info { color: var(--accent); }
+    .log .warn { color: var(--warn); }
+    .gallery-head {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .gallery-head select { width: auto; min-width: 120px; }
+    .gallery-head input { flex: 1; min-width: 160px; }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 10px;
+      max-height: 520px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .g-item {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      text-align: center;
+      cursor: default;
+    }
+    .g-item img {
+      width: 64px; height: 64px;
+      object-fit: cover;
+      border-radius: 10px;
+      background: #0b0d12;
+    }
+    .g-item .name {
+      margin-top: 6px;
+      font-size: .72rem;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .g-item.own .name { color: var(--accent-2); }
+    .hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+    .token-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+    details summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: .9rem;
+      margin-bottom: 8px;
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>图标管理站</h1>
+        <p>上传 PNG → 写入 <code>Fang/icon</code> / <code>Yuan/icon</code> → 自动更新 <code>tubiao.json</code></p>
+      </div>
+      <div class="badge" id="statusBadge">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">未连接</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- 左侧：上传 -->
+      <section class="card">
+        <h2>上传新图标</h2>
+
+        <details open>
+          <summary>GitHub 连接设置</summary>
+          <label>仓库（owner/repo）</label>
+          <input id="repo" type="text" value="xyysjd/tubiao" />
+          <label>分支</label>
+          <input id="branch" type="text" value="main" />
+          <label>Personal Access Token（仅保存在本机浏览器）</label>
+          <div class="token-row">
+            <input id="token" type="password" placeholder="ghp_... 或 github_pat_...（contents:write）" autocomplete="off" />
+            <button class="ghost" type="button" id="btnSaveToken">保存</button>
+          </div>
+          <p class="hint">
+            建议使用 Fine-grained Token，只给本仓库 <b>Contents: Read and write</b>。
+            Token 仅存 <code>localStorage</code>，不会上传到别处。
+            <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener">创建 Token</a>
+          </p>
+        </details>
+
+        <label>目标图包</label>
+        <div class="packs">
+          <label class="pack"><input type="checkbox" id="packFang" checked /> Fang（方）</label>
+          <label class="pack"><input type="checkbox" id="packYuan" checked /> Yuan（圆）</label>
+        </div>
+
+        <div class="drop" id="dropZone">
+          <div><strong>点击选择</strong> 或拖拽 PNG 到这里</div>
+          <div style="margin-top:6px;font-size:.82rem">支持多文件 · 文件名即图标名（可改）</div>
+          <input type="file" id="fileInput" accept="image/png,image/*" multiple hidden />
+        </div>
+
+        <div class="file-list" id="fileList"></div>
+
+        <div class="btns">
+          <button class="primary" id="btnUpload" disabled>上传并更新 JSON</button>
+          <button class="ghost" id="btnClear">清空列表</button>
+          <button class="ghost" id="btnTest">测试连接</button>
+        </div>
+
+        <div class="log" id="log"></div>
+      </section>
+
+      <!-- 右侧：预览仓库图标 -->
+      <section class="card">
+        <h2>仓库图标一览</h2>
+        <div class="gallery-head">
+          <select id="galleryPack">
+            <option value="Fang">Fang</option>
+            <option value="Yuan">Yuan</option>
+          </select>
+          <input id="gallerySearch" type="text" placeholder="搜索名称…" />
+          <button class="ghost" type="button" id="btnRefreshGallery">刷新</button>
+        </div>
+        <p class="hint" id="galleryMeta">连接后可加载 icon 目录与 JSON 条目。</p>
+        <div class="gallery" id="gallery"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const REPO_DEFAULT = 'xyysjd/tubiao';
+    const BRANCH_DEFAULT = 'main';
+    const RAW_BASE = (owner, repo, branch) =>
+      `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
+
+    /** @type {{file: File, displayName: string, fileName: string, preview: string}[]} */
+    let queue = [];
+    let jsonCache = { Fang: null, Yuan: null };
+
+    const $ = (id) => document.getElementById(id);
+    const logEl = $('log');
+
+    function log(msg, type = '') {
+      const line = document.createElement('div');
+      if (type) line.className = type;
+      const t = new Date().toLocaleTimeString();
+      line.textContent = `[${t}] ${msg}`;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function getConfig() {
+      return {
+        repo: ($('repo').value || REPO_DEFAULT).trim(),
+        branch: ($('branch').value || BRANCH_DEFAULT).trim(),
+        token: ($('token').value || '').trim(),
+      };
+    }
+
+    function ownerRepo() {
+      const { repo } = getConfig();
+      const [owner, name] = repo.split('/');
+      if (!owner || !name) throw new Error('仓库格式应为 owner/repo');
+      return { owner, name };
+    }
+
+    function saveSettings() {
+      const { repo, branch, token } = getConfig();
+      localStorage.setItem('tubiao_repo', repo);
+      localStorage.setItem('tubiao_branch', branch);
+      if (token) localStorage.setItem('tubiao_token', token);
+      log('设置已保存到本机', 'ok');
+      setStatus(token ? 'ready' : 'idle');
+    }
+
+    function loadSettings() {
+      $('repo').value = localStorage.getItem('tubiao_repo') || REPO_DEFAULT;
+      $('branch').value = localStorage.getItem('tubiao_branch') || BRANCH_DEFAULT;
+      const token = localStorage.getItem('tubiao_token') || '';
+      $('token').value = token;
+      setStatus(token ? 'ready' : 'idle');
+    }
+
+    function setStatus(state, text) {
+      const dot = $('statusDot');
+      const label = $('statusText');
+      dot.className = 'dot';
+      if (state === 'ok') {
+        dot.classList.add('ok');
+        label.textContent = text || '已连接';
+      } else if (state === 'err') {
+        dot.classList.add('err');
+        label.textContent = text || '连接失败';
+      } else if (state === 'ready') {
+        label.textContent = text || 'Token 已配置';
+      } else {
+        label.textContent = text || '未连接';
+      }
+    }
+
+    async function gh(path, options = {}) {
+      const { token } = getConfig();
+      if (!token) throw new Error('请先填写并保存 GitHub Token');
+      const headers = {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(options.headers || {}),
+      };
+      const res = await fetch(`https://api.github.com${path}`, { ...options, headers });
+      if (!res.ok) {
+        let detail = '';
+        try {
+          const j = await res.json();
+          detail = j.message || JSON.stringify(j);
+        } catch (_) {
+          detail = await res.text();
+        }
+        throw new Error(`GitHub API ${res.status}: ${detail}`);
+      }
+      if (res.status === 204) return null;
+      return res.json();
+    }
+
+    function sanitizeBaseName(name) {
+      // 去掉扩展名，去掉路径，仅保留安全字符
+      let base = name.replace(/\\/g, '/').split('/').pop() || 'icon';
+      base = base.replace(/\.[^.]+$/, '');
+      base = base.replace(/[^\w一-鿿.+-]/g, '');
+      if (!base) base = 'icon';
+      return base;
+    }
+
+    function extOf(file) {
+      const m = (file.name || '').match(/\.([a-zA-Z0-9]+)$/);
+      return (m ? m[1] : 'png').toLowerCase();
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result;
+          const b64 = String(result).split(',')[1];
+          resolve(b64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderQueue() {
+      const list = $('fileList');
+      list.innerHTML = '';
+      queue.forEach((item, idx) => {
+        const el = document.createElement('div');
+        el.className = 'file-item';
+        el.innerHTML = `
+          <img src="${item.preview}" alt="" />
+          <div class="meta">
+            <small>JSON 显示名</small>
+            <input type="text" data-k="displayName" data-i="${idx}" value="${escapeAttr(item.displayName)}" />
+            <small style="display:block;margin-top:4px">文件名（不含扩展名）</small>
+            <input type="text" data-k="fileName" data-i="${idx}" value="${escapeAttr(item.fileName)}" />
+          </div>
+          <button type="button" data-rm="${idx}">移除</button>
+        `;
+        list.appendChild(el);
+      });
+      $('btnUpload').disabled = queue.length === 0;
+    }
+
+    function escapeAttr(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    }
+
+    function addFiles(fileList) {
+      const files = Array.from(fileList || []).filter((f) => f.type.startsWith('image/') || /\.png$/i.test(f.name));
+      if (!files.length) {
+        log('没有可用的图片文件', 'warn');
+        return;
+      }
+      for (const file of files) {
+        const base = sanitizeBaseName(file.name);
+        const preview = URL.createObjectURL(file);
+        queue.push({
+          file,
+          displayName: base,
+          fileName: base,
+          preview,
+        });
+      }
+      renderQueue();
+      log(`已加入 ${files.length} 个文件，队列共 ${queue.length} 个`, 'info');
+    }
+
+    // —— GitHub 内容读写 ——
+    /** 路径分段编码，保留斜杠 */
+    function encPath(path) {
+      return String(path).split('/').map(encodeURIComponent).join('/');
+    }
+
+    async function getContent(path) {
+      const { owner, name } = ownerRepo();
+      const { branch } = getConfig();
+      const data = await gh(`/repos/${owner}/${name}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`);
+      return data; // { content, sha, encoding, ... }
+    }
+
+    async function putContent(path, contentBase64, message, sha) {
+      const { owner, name } = ownerRepo();
+      const { branch } = getConfig();
+      const body = {
+        message,
+        content: contentBase64,
+        branch,
+      };
+      if (sha) body.sha = sha;
+      return gh(`/repos/${owner}/${name}/contents/${encPath(path)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }
+
+    async function listDir(path) {
+      const { owner, name } = ownerRepo();
+      const { branch } = getConfig();
+      return gh(`/repos/${owner}/${name}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`);
+    }
+
+    function decodeBase64Utf8(b64) {
+      const bin = atob(b64.replace(/\n/g, ''));
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder('utf-8').decode(bytes);
+    }
+
+    function encodeUtf8Base64(str) {
+      const bytes = new TextEncoder().encode(str);
+      let bin = '';
+      bytes.forEach((b) => { bin += String.fromCharCode(b); });
+      return btoa(bin);
+    }
+
+    /** 按 name 不区分大小写插入，尽量保持 A-Z 顺序 */
+    function upsertIcon(icons, entry) {
+      const idx = icons.findIndex((i) => i.name.toLowerCase() === entry.name.toLowerCase());
+      if (idx >= 0) {
+        icons[idx] = entry;
+        return { icons, action: 'update', index: idx };
+      }
+      // 找插入位置：按 localeCompare 忽略大小写
+      let insertAt = icons.length;
+      for (let i = 0; i < icons.length; i++) {
+        if (icons[i].name.localeCompare(entry.name, 'en', { sensitivity: 'base' }) > 0) {
+          insertAt = i;
+          break;
+        }
+      }
+      icons.splice(insertAt, 0, entry);
+      return { icons, action: 'insert', index: insertAt };
+    }
+
+    function iconUrl(pack, fileNameWithExt) {
+      const { owner, name } = ownerRepo();
+      const { branch } = getConfig();
+      return `${RAW_BASE(owner, name, branch)}/${pack}/icon/${fileNameWithExt}`;
+    }
+
+    async function ensureJson(pack) {
+      if (jsonCache[pack]?.data && jsonCache[pack]?.sha) return jsonCache[pack];
+      const path = `${pack}/tubiao.json`;
+      log(`读取 ${path} …`, 'info');
+      const raw = await getContent(path);
+      const text = decodeBase64Utf8(raw.content);
+      const data = JSON.parse(text);
+      jsonCache[pack] = { data, sha: raw.sha, path };
+      return jsonCache[pack];
+    }
+
+    async function uploadAll() {
+      const packs = [];
+      if ($('packFang').checked) packs.push('Fang');
+      if ($('packYuan').checked) packs.push('Yuan');
+      if (!packs.length) {
+        log('请至少选择一个图包', 'err');
+        return;
+      }
+      if (!queue.length) {
+        log('队列为空', 'warn');
+        return;
+      }
+
+      // 校验名称
+      for (const item of queue) {
+        item.displayName = sanitizeBaseName(item.displayName || item.fileName);
+        item.fileName = sanitizeBaseName(item.fileName || item.displayName);
+        if (!item.displayName || !item.fileName) {
+          log('存在空名称，请检查', 'err');
+          return;
+        }
+      }
+
+      $('btnUpload').disabled = true;
+      try {
+        // 预加载 JSON
+        for (const pack of packs) {
+          await ensureJson(pack);
+        }
+
+        const summaries = [];
+
+        for (const item of queue) {
+          const ext = extOf(item.file) === 'jpg' ? 'jpg' : (extOf(item.file) === 'jpeg' ? 'jpg' : 'png');
+          // 强制 png 扩展名以匹配现有规范；若是其他格式仍用原扩展
+          const fileExt = /\.png$/i.test(item.file.name) || item.file.type === 'image/png' ? 'png' : ext;
+          const diskName = `${item.fileName}.${fileExt}`;
+          const b64 = await fileToBase64(item.file);
+
+          for (const pack of packs) {
+            const imgPath = `${pack}/icon/${diskName}`;
+            log(`上传 ${imgPath}（显示名: ${item.displayName}）…`, 'info');
+
+            let sha;
+            try {
+              const existing = await getContent(imgPath);
+              sha = existing.sha;
+              log(`  已存在，将覆盖`, 'warn');
+            } catch (e) {
+              if (!String(e.message).includes('404')) throw e;
+            }
+
+            await putContent(imgPath, b64, `添加图标 ${pack}/${diskName}`, sha);
+            log(`  ✓ 图片已写入`, 'ok');
+
+            // 更新内存中的 JSON
+            const entry = {
+              name: item.displayName,
+              url: iconUrl(pack, diskName),
+            };
+            const j = jsonCache[pack];
+            const result = upsertIcon(j.data.icons, entry);
+            summaries.push(`${pack}: ${result.action} ${entry.name}`);
+            log(`  JSON 将${result.action === 'update' ? '更新' : '插入'}条目 ${entry.name}`, 'info');
+          }
+        }
+
+        // 写回 JSON
+        for (const pack of packs) {
+          const j = jsonCache[pack];
+          // 重新拉一次 sha，避免并发冲突
+          const latest = await getContent(j.path);
+          j.sha = latest.sha;
+          const pretty = JSON.stringify(j.data, null, '\t');
+          // 保持末尾换行
+          const text = pretty.endsWith('\n') ? pretty : pretty + '\n';
+          const b64 = encodeUtf8Base64(text);
+          log(`提交 ${j.path} …`, 'info');
+          const names = queue.map((q) => q.displayName).join(', ');
+          await putContent(j.path, b64, `更新 ${pack}/tubiao.json：${names}`, j.sha);
+          // 刷新缓存 sha
+          const after = await getContent(j.path);
+          j.sha = after.sha;
+          j.data = JSON.parse(decodeBase64Utf8(after.content));
+          log(`  ✓ ${j.path} 已更新`, 'ok');
+        }
+
+        log(`全部完成：${summaries.join('；')}`, 'ok');
+        setStatus('ok', '上传成功');
+
+        // 清空队列
+        queue.forEach((q) => URL.revokeObjectURL(q.preview));
+        queue = [];
+        renderQueue();
+        await refreshGallery();
+      } catch (e) {
+        console.error(e);
+        log(e.message || String(e), 'err');
+        setStatus('err', '出错');
+      } finally {
+        $('btnUpload').disabled = queue.length === 0;
+      }
+    }
+
+    async function testConnection() {
+      try {
+        const { owner, name } = ownerRepo();
+        log(`测试连接 ${owner}/${name} …`, 'info');
+        const repo = await gh(`/repos/${owner}/${name}`);
+        log(`仓库 OK：${repo.full_name}（${repo.private ? '私有' : '公开'}）`, 'ok');
+        await ensureJson('Fang');
+        await ensureJson('Yuan');
+        log(`Fang icons: ${jsonCache.Fang.data.icons.length}，Yuan icons: ${jsonCache.Yuan.data.icons.length}`, 'ok');
+        setStatus('ok', '连接正常');
+        await refreshGallery();
+      } catch (e) {
+        log(e.message || String(e), 'err');
+        setStatus('err');
+      }
+    }
+
+    async function refreshGallery() {
+      const pack = $('galleryPack').value;
+      const q = ($('gallerySearch').value || '').trim().toLowerCase();
+      const gallery = $('gallery');
+      gallery.innerHTML = '';
+      try {
+        const files = await listDir(`${pack}/icon`);
+        if (!Array.isArray(files)) {
+          $('galleryMeta').textContent = '目录为空或无法读取';
+          return;
+        }
+        let icons = files.filter((f) => f.type === 'file' && /\.(png|jpe?g|webp|gif)$/i.test(f.name));
+        // 尝试拿 json 判断 own
+        let ownNames = new Set();
+        try {
+          const j = await ensureJson(pack);
+          j.data.icons
+            .filter((i) => i.url && i.url.includes('xyysjd'))
+            .forEach((i) => ownNames.add(i.name.toLowerCase()));
+        } catch (_) {}
+
+        if (q) icons = icons.filter((f) => f.name.toLowerCase().includes(q));
+        $('galleryMeta').textContent = `${pack}/icon 共 ${files.filter(f=>f.type==='file').length} 个文件，展示 ${icons.length} 个`;
+
+        const { owner, name } = ownerRepo();
+        const { branch } = getConfig();
+        for (const f of icons.sort((a, b) => a.name.localeCompare(b.name))) {
+          const stem = f.name.replace(/\.[^.]+$/, '');
+          const isOwn = ownNames.has(stem.toLowerCase());
+          const url = `${RAW_BASE(owner, name, branch)}/${pack}/icon/${f.name}?t=${Date.now()}`;
+          const el = document.createElement('div');
+          el.className = 'g-item' + (isOwn ? ' own' : '');
+          el.innerHTML = `<img src="${url}" alt="${escapeAttr(stem)}" loading="lazy" /><div class="name">${escapeAttr(stem)}</div>`;
+          gallery.appendChild(el);
+        }
+      } catch (e) {
+        $('galleryMeta').textContent = e.message || String(e);
+      }
+    }
+
+    // —— 事件 ——
+    $('btnSaveToken').addEventListener('click', saveSettings);
+    $('btnTest').addEventListener('click', testConnection);
+    $('btnUpload').addEventListener('click', uploadAll);
+    $('btnClear').addEventListener('click', () => {
+      queue.forEach((q) => URL.revokeObjectURL(q.preview));
+      queue = [];
+      renderQueue();
+      log('队列已清空', 'info');
+    });
+    $('btnRefreshGallery').addEventListener('click', refreshGallery);
+    $('galleryPack').addEventListener('change', refreshGallery);
+    $('gallerySearch').addEventListener('input', () => {
+      clearTimeout(window.__gs);
+      window.__gs = setTimeout(refreshGallery, 250);
+    });
+
+    const drop = $('dropZone');
+    const fileInput = $('fileInput');
+    drop.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      addFiles(fileInput.files);
+      fileInput.value = '';
+    });
+    drop.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      drop.classList.add('drag');
+    });
+    drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      drop.classList.remove('drag');
+      addFiles(e.dataTransfer.files);
+    });
+
+    $('fileList').addEventListener('input', (e) => {
+      const t = e.target;
+      if (t.dataset.i == null) return;
+      const i = Number(t.dataset.i);
+      const k = t.dataset.k;
+      if (queue[i] && (k === 'displayName' || k === 'fileName')) {
+        queue[i][k] = t.value;
+      }
+    });
+    $('fileList').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-rm]');
+      if (!btn) return;
+      const i = Number(btn.dataset.rm);
+      URL.revokeObjectURL(queue[i].preview);
+      queue.splice(i, 1);
+      renderQueue();
+    });
+
+    loadSettings();
+    log('就绪。配置 Token 后点「测试连接」，再拖入图片上传。', 'info');
+  </script>
+</body>
+</html>
