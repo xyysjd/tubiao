@@ -319,6 +319,92 @@
       opacity: .45;
       pointer-events: none;
     }
+    .compare-card {
+      margin-top: 16px;
+    }
+    .compare-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .compare-head h2 { margin: 0; }
+    .compare-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .stat {
+      font-size: .82rem;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--muted);
+    }
+    .stat b { color: var(--text); font-weight: 600; }
+    .stat.only-fang b { color: #7aa2ff; }
+    .stat.only-yuan b { color: #5ee0a8; }
+    .stat.both b { color: var(--muted); }
+    .compare-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 760px) {
+      .compare-cols { grid-template-columns: 1fr; }
+    }
+    .compare-col h3 {
+      margin: 0 0 10px;
+      font-size: .95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .compare-col h3 .count {
+      font-size: .78rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .compare-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 10px;
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+      min-height: 80px;
+    }
+    .c-item {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      text-align: center;
+    }
+    .c-item img {
+      width: 56px; height: 56px;
+      object-fit: cover;
+      border-radius: 10px;
+      background: #0b0d12;
+    }
+    .c-item .name {
+      margin-top: 6px;
+      font-size: .72rem;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .c-item.empty {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: .85rem;
+      padding: 20px;
+      border-style: dashed;
+    }
     .hint {
       margin-top: 10px;
       color: var(--muted);
@@ -413,6 +499,37 @@
         <div class="gallery" id="gallery"></div>
       </section>
     </div>
+
+    <!-- 下方：Fang / Yuan 对比 -->
+    <section class="card compare-card">
+      <div class="compare-head">
+        <div>
+          <h2>图标对比 · Fang ↔ Yuan</h2>
+          <p class="hint" style="margin:6px 0 0">按文件名（不含扩展名，忽略大小写）对比两侧 icon 目录，找出只在一边存在的图标。</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="compareSearch" type="text" placeholder="筛选名称…" style="width:160px" />
+          <button class="ghost" type="button" id="btnCompare">开始对比</button>
+        </div>
+      </div>
+      <div class="compare-stats" id="compareStats">
+        <span class="stat">尚未对比</span>
+      </div>
+      <div class="compare-cols" style="margin-top:14px">
+        <div class="compare-col">
+          <h3>仅 Fang 有 <span class="count" id="onlyFangCount">—</span></h3>
+          <div class="compare-list" id="onlyFangList">
+            <div class="c-item empty">点「开始对比」加载</div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <h3>仅 Yuan 有 <span class="count" id="onlyYuanCount">—</span></h3>
+          <div class="compare-list" id="onlyYuanList">
+            <div class="c-item empty">点「开始对比」加载</div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -1001,6 +1118,124 @@
       const card = btn.closest('.g-item');
       if (!card || card.classList.contains('deleting')) return;
       deleteIcon(card.dataset.pack, card.dataset.file, card.dataset.sha, card);
+    });
+
+    // —— 图标对比 ——
+    /** 缓存两侧 icon 文件列表：{ Fang: [{name, stem, sha}], Yuan: [...] } */
+    let compareCache = null;
+
+    function stemOf(fileName) {
+      return String(fileName).replace(/\.[^.]+$/, '');
+    }
+
+    async function loadPackIconFiles(pack) {
+      const files = await listDir(`${pack}/icon`);
+      if (!Array.isArray(files)) return [];
+      return files
+        .filter((f) => f.type === 'file' && /\.(png|jpe?g|webp|gif)$/i.test(f.name))
+        .map((f) => ({
+          name: f.name,
+          stem: stemOf(f.name),
+          stemKey: stemOf(f.name).toLowerCase(),
+          sha: f.sha || '',
+          pack,
+        }))
+        .sort((a, b) => a.stem.localeCompare(b.stem, 'en', { sensitivity: 'base' }));
+    }
+
+    function renderCompareList(containerId, items, pack) {
+      const el = $(containerId);
+      el.innerHTML = '';
+      if (!items.length) {
+        el.innerHTML = '<div class="c-item empty">没有差异项</div>';
+        return;
+      }
+      const { owner, name } = ownerRepo();
+      const { branch } = getConfig();
+      for (const item of items) {
+        const url = `${RAW_BASE(owner, name, branch)}/${pack}/icon/${item.name}?t=${Date.now()}`;
+        const div = document.createElement('div');
+        div.className = 'c-item';
+        div.title = item.name;
+        div.innerHTML =
+          `<img src="${url}" alt="${escapeAttr(item.stem)}" loading="lazy" />` +
+          `<div class="name">${escapeAttr(item.stem)}</div>`;
+        el.appendChild(div);
+      }
+    }
+
+    function applyCompareFilter() {
+      if (!compareCache) return;
+      const q = ($('compareSearch').value || '').trim().toLowerCase();
+      const { onlyFang, onlyYuan, bothCount, fangTotal, yuanTotal } = compareCache;
+
+      const fangView = q
+        ? onlyFang.filter((i) => i.stemKey.includes(q) || i.name.toLowerCase().includes(q))
+        : onlyFang;
+      const yuanView = q
+        ? onlyYuan.filter((i) => i.stemKey.includes(q) || i.name.toLowerCase().includes(q))
+        : onlyYuan;
+
+      $('onlyFangCount').textContent = `${fangView.length}${q ? ` / ${onlyFang.length}` : ''}`;
+      $('onlyYuanCount').textContent = `${yuanView.length}${q ? ` / ${onlyYuan.length}` : ''}`;
+      renderCompareList('onlyFangList', fangView, 'Fang');
+      renderCompareList('onlyYuanList', yuanView, 'Yuan');
+
+      $('compareStats').innerHTML = `
+        <span class="stat">Fang 共 <b>${fangTotal}</b></span>
+        <span class="stat">Yuan 共 <b>${yuanTotal}</b></span>
+        <span class="stat both">两边都有 <b>${bothCount}</b></span>
+        <span class="stat only-fang">仅 Fang <b>${onlyFang.length}</b></span>
+        <span class="stat only-yuan">仅 Yuan <b>${onlyYuan.length}</b></span>
+      `;
+    }
+
+    async function runCompare() {
+      const btn = $('btnCompare');
+      btn.disabled = true;
+      try {
+        log('对比 Fang / Yuan icon 目录…', 'info');
+        const [fangFiles, yuanFiles] = await Promise.all([
+          loadPackIconFiles('Fang'),
+          loadPackIconFiles('Yuan'),
+        ]);
+
+        const fangMap = new Map(fangFiles.map((f) => [f.stemKey, f]));
+        const yuanMap = new Map(yuanFiles.map((f) => [f.stemKey, f]));
+
+        const onlyFang = fangFiles.filter((f) => !yuanMap.has(f.stemKey));
+        const onlyYuan = yuanFiles.filter((f) => !fangMap.has(f.stemKey));
+        let bothCount = 0;
+        for (const key of fangMap.keys()) {
+          if (yuanMap.has(key)) bothCount++;
+        }
+
+        compareCache = {
+          onlyFang,
+          onlyYuan,
+          bothCount,
+          fangTotal: fangFiles.length,
+          yuanTotal: yuanFiles.length,
+        };
+
+        applyCompareFilter();
+        log(
+          `对比完成：Fang ${fangFiles.length} / Yuan ${yuanFiles.length} · 共有 ${bothCount} · 仅Fang ${onlyFang.length} · 仅Yuan ${onlyYuan.length}`,
+          'ok'
+        );
+      } catch (e) {
+        console.error(e);
+        log(e.message || String(e), 'err');
+        $('compareStats').innerHTML = `<span class="stat">对比失败：${escapeAttr(e.message || String(e))}</span>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    $('btnCompare').addEventListener('click', runCompare);
+    $('compareSearch').addEventListener('input', () => {
+      clearTimeout(window.__cs);
+      window.__cs = setTimeout(applyCompareFilter, 200);
     });
 
     const drop = $('dropZone');
