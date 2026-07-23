@@ -95,5 +95,5 @@ tubiao/
 ## 说明
 
 - 图标命名建议用服名/群名，方便 Fileball 搜索。
-- JSON 中仍包含上游 [Softlyx/Fileball](https://github.com/Softlyx/Fileball) 的引用；本仓库新增图标指向 `xyysjd/tubiao`。
+- `tubiao.json` 仅包含本仓库 `icon/` 中的图标（已不再合并 Softlyx 外链）。
 - 若管理站提示 SHA 冲突，刷新后重试（有人同时改了同一文件）。
