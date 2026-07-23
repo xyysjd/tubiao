@@ -26,23 +26,35 @@
    - Repository access：只选 `tubiao`
    - Permissions → Repository permissions → **Contents: Read and write**
 3. 打开管理站，粘贴 Token 点「保存」，再点「测试连接」
-4. 拖入 PNG（可多选），选择 Fang / Yuan / 两者，确认「JSON 显示名」和「文件名」，点「上传并更新 JSON」
+4. 拖入任意图片（可多选），选择 Fang / Yuan / 两者，确认「JSON 显示名」和「文件名」，点「上传并更新 JSON」
 
 Token 只存在浏览器 `localStorage`，不会发到第三方；建议仅在本机使用。
+
+### 本地裁图（内置方圆工坊）
+
+管理站已内置「方圆工坊」的裁图能力，**默认开启**：上传前在浏览器本地把原图裁成图标，原图不会上传，只上传裁好的 PNG。
+
+- **Fang（方）→ 圆角矩形**，**Yuan（圆）→ 正圆**，形状按图包自动对应
+- 一次拖入任意图片（不必事先裁好），选 Fang / Yuan / 两者，即可一份原图同时产出两种形状
+- 可调：导出尺寸（108 / 144 / 256 / 512 / 1024）、裁切方式（铺满 cover / 完整容纳 contain）、圆角半径（仅 Fang，默认 18.75% ≈ 原 PSD）
+- 关闭「本地裁图」开关则按原样上传（沿用旧行为，用于已经裁好的 PNG）
+
+裁图纯用浏览器 Canvas 完成，无需联网，无外部依赖。
 
 ### 上传时会发生什么
 
 对每个选中的图包：
 
-1. 图片写入 `{Fang|Yuan}/icon/{文件名}.png`
-2. 在 `{Fang|Yuan}/tubiao.json` 中按名称插入/更新条目：
+1. 若开启裁图：按该图包形状（Fang 圆角 / Yuan 正圆）在本地裁出方形 PNG；否则用原图
+2. 图片写入 `{Fang|Yuan}/icon/{文件名}.png`
+3. 在 `{Fang|Yuan}/tubiao.json` 中按名称插入/更新条目：
    ```json
    {
      "name": "显示名",
      "url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Fang/icon/显示名.png"
    }
    ```
-3. 通过 GitHub API 直接提交到 `main` 分支
+4. 通过 GitHub API 直接提交到 `main` 分支
 
 ### 删除图标
 

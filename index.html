@@ -136,6 +136,118 @@
       background: rgba(91,140,255,.06);
     }
     .drop strong { color: var(--text); }
+    /* —— 本地裁图设置 —— */
+    .crop-box {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel-2);
+      padding: 12px 14px;
+    }
+    .crop-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .crop-head .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: .9rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .crop-head .switch input { width: auto; }
+    .crop-body { margin-top: 12px; }
+    .crop-body.disabled { opacity: .4; pointer-events: none; }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .chip {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: .12s ease;
+    }
+    .chip:hover { color: var(--text); border-color: var(--accent); }
+    .chip.active {
+      background: rgba(91,140,255,.16);
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .shape-map {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+      font-size: .82rem;
+      color: var(--muted);
+    }
+    .shape-map .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 10px;
+    }
+    .shape-swatch {
+      width: 20px; height: 20px;
+      background: linear-gradient(135deg, #5b8cff, #3dd68c);
+      display: inline-block;
+    }
+    .shape-swatch.circle { border-radius: 50%; }
+    .shape-swatch.rounded { border-radius: 5px; }
+    .crop-range {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .crop-range input[type="range"] { flex: 1; width: auto; }
+    .crop-range .val { min-width: 56px; text-align: right; color: var(--text); font-size: .85rem; }
+    /* 队列裁剪预览 */
+    .crop-preview {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      max-width: 128px;
+    }
+    .cp-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .cp-item canvas {
+      width: 52px; height: 52px;
+      /* 透明棋盘格，凸显裁剪后的透明区域 */
+      background-image:
+        linear-gradient(45deg, #2a3142 25%, transparent 25%),
+        linear-gradient(-45deg, #2a3142 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #2a3142 75%),
+        linear-gradient(-45deg, transparent 75%, #2a3142 75%);
+      background-size: 12px 12px;
+      background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+      background-color: #0b0d12;
+      border-radius: 8px;
+    }
+    .cp-item small {
+      color: var(--muted);
+      font-size: .7rem;
+      line-height: 1;
+    }
     .file-list {
       margin-top: 12px;
       display: flex;
@@ -146,7 +258,7 @@
     }
     .file-item {
       display: grid;
-      grid-template-columns: 52px 1fr auto;
+      grid-template-columns: auto 1fr auto;
       gap: 10px;
       align-items: center;
       background: var(--panel-2);
@@ -154,6 +266,7 @@
       border-radius: 12px;
       padding: 8px;
     }
+    .file-item .meta { min-width: 0; }
     .file-item img {
       width: 52px; height: 52px;
       object-fit: cover;
@@ -504,13 +617,53 @@
 
         <label>目标图包</label>
         <div class="packs">
-          <label class="pack"><input type="checkbox" id="packFang" checked /> Fang（方）</label>
-          <label class="pack"><input type="checkbox" id="packYuan" checked /> Yuan（圆）</label>
+          <label class="pack"><input type="checkbox" id="packFang" checked /> Fang（方·圆角）</label>
+          <label class="pack"><input type="checkbox" id="packYuan" checked /> Yuan（圆·正圆）</label>
+        </div>
+
+        <div class="crop-box">
+          <div class="crop-head">
+            <label class="switch">
+              <input type="checkbox" id="cropEnable" checked />
+              <span>本地裁图（上传前自动裁成图标）</span>
+            </label>
+          </div>
+          <div class="crop-body" id="cropBody">
+            <div class="shape-map">
+              <span class="tag"><span class="shape-swatch rounded"></span> Fang → 圆角矩形</span>
+              <span class="tag"><span class="shape-swatch circle"></span> Yuan → 正圆</span>
+            </div>
+
+            <label style="margin-top:12px">导出尺寸（正方形边长 px）</label>
+            <div class="chips" id="cropSizes">
+              <button type="button" class="chip" data-size="108">108</button>
+              <button type="button" class="chip" data-size="144">144</button>
+              <button type="button" class="chip active" data-size="256">256</button>
+              <button type="button" class="chip" data-size="512">512</button>
+              <button type="button" class="chip" data-size="1024">1024</button>
+            </div>
+
+            <label style="margin-top:12px">裁切方式</label>
+            <div class="chips" id="cropFits">
+              <button type="button" class="chip active" data-fit="cover">铺满裁切（cover）</button>
+              <button type="button" class="chip" data-fit="contain">完整容纳（contain）</button>
+            </div>
+
+            <label style="margin-top:12px">圆角半径（仅 Fang，占边长百分比）</label>
+            <div class="crop-range">
+              <input type="range" id="cropCorner" min="0" max="50" step="0.25" value="18.75" />
+              <span class="val" id="cropCornerVal">18.75%</span>
+            </div>
+            <p class="hint" style="margin-top:8px">
+              裁图在浏览器本地完成，原图不会上传，只上传裁好的 PNG。
+              关闭则按原样上传（沿用旧行为）。
+            </p>
+          </div>
         </div>
 
         <div class="drop" id="dropZone">
-          <div><strong>点击选择</strong> 或拖拽 PNG 到这里</div>
-          <div style="margin-top:6px;font-size:.82rem">支持多文件 · 文件名即图标名（可改）</div>
+          <div><strong>点击选择</strong> 或拖拽图片到这里</div>
+          <div style="margin-top:6px;font-size:.82rem">支持多文件 · 文件名即图标名（可改）· 开启裁图后可拖任意图片</div>
           <input type="file" id="fileInput" accept="image/png,image/*" multiple hidden />
         </div>
 
@@ -599,9 +752,87 @@
     const RAW_BASE = (owner, repo, branch) =>
       `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
 
-    /** @type {{file: File, displayName: string, fileName: string, preview: string}[]} */
+    /** @type {{file: File, displayName: string, fileName: string, preview: string, img?: HTMLImageElement}[]} */
     let queue = [];
     let jsonCache = { Fang: null, Yuan: null };
+
+    // —— 本地裁图设置 ——
+    // Fang（方）= 圆角矩形，Yuan（圆）= 正圆
+    const cropState = {
+      enabled: true,
+      size: 256,
+      fit: 'cover',        // cover | contain
+      cornerRatio: 0.1875, // 仅 Fang 圆角使用
+    };
+    const PACK_SHAPE = { Fang: 'rounded', Yuan: 'circle' };
+
+    /** 圆角矩形路径（不含 beginPath，由调用方开始） */
+    function roundRect(ctx, x, y, w, h, r) {
+      const rr = Math.min(r, w / 2, h / 2);
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+
+    /** 把图片按形状/尺寸/裁切方式绘制到方形画布，返回 canvas */
+    function renderToCanvas(img, opts) {
+      const S = opts.size;
+      const canvas = document.createElement('canvas');
+      canvas.width = S;
+      canvas.height = S;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, S, S);
+      ctx.save();
+
+      ctx.beginPath();
+      if (opts.shape === 'circle') {
+        ctx.arc(S / 2, S / 2, S / 2, 0, Math.PI * 2);
+      } else {
+        roundRect(ctx, 0, 0, S, S, S * opts.cornerRatio);
+      }
+      ctx.clip();
+
+      const iw = img.naturalWidth || img.width;
+      const ih = img.naturalHeight || img.height;
+      const baseScale = opts.fit === 'contain'
+        ? Math.min(S / iw, S / ih)   // contain：整图放入，四周可能留透明
+        : Math.max(S / iw, S / ih);  // cover：铺满方框，溢出部分被裁
+      const zoom = opts.zoom || 1;
+      const ox = opts.offsetX || 0;
+      const oy = opts.offsetY || 0;
+      const dw = iw * baseScale * zoom;
+      const dh = ih * baseScale * zoom;
+      const dx = S / 2 + ox - dw / 2;
+      const dy = S / 2 + oy - dh / 2;
+      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.restore();
+      return canvas;
+    }
+
+    /** canvas → PNG Blob（透明背景） */
+    function canvasToBlob(canvas) {
+      return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    }
+
+    /** 从 File / URL 解码为 HTMLImageElement */
+    function loadImageElement(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('图片解码失败'));
+        img.decoding = 'async';
+        img.src = src;
+      });
+    }
+
+    /** 用裁好的 canvas 生成一个 PNG File（复用现有上传链路） */
+    async function canvasToPngFile(canvas, baseName) {
+      const blob = await canvasToBlob(canvas);
+      return new File([blob], `${baseName}.png`, { type: 'image/png' });
+    }
 
     const $ = (id) => document.getElementById(id);
     const logEl = $('log');
@@ -715,22 +946,72 @@
       });
     }
 
+    /** 当前勾选的目标图包 */
+    function selectedPacks() {
+      const packs = [];
+      if ($('packFang').checked) packs.push('Fang');
+      if ($('packYuan').checked) packs.push('Yuan');
+      return packs;
+    }
+
+    /** 生成一个队列项的裁剪预览区（真实 canvas 渲染） */
+    function buildPreview(item) {
+      const box = document.createElement('div');
+      box.className = 'crop-preview';
+      if (!cropState.enabled || !item.img) {
+        // 不裁图：显示原图缩略
+        const img = document.createElement('img');
+        img.src = item.preview;
+        img.alt = '';
+        box.appendChild(img);
+        return box;
+      }
+      // 裁图：按每个选中的图包各渲染一个真实预览
+      const packs = selectedPacks();
+      const labels = { Fang: '方·圆角', Yuan: '圆·正圆' };
+      const list = packs.length ? packs : ['Yuan'];
+      for (const pack of list) {
+        const shape = PACK_SHAPE[pack] || 'circle';
+        // 预览用较小尺寸即可，形状/裁切方式与实际上传一致
+        const canvas = renderToCanvas(item.img, {
+          size: 104, // 2× 显示尺寸，保证清晰
+          shape,
+          fit: cropState.fit,
+          cornerRatio: cropState.cornerRatio,
+        });
+        const cell = document.createElement('div');
+        cell.className = 'cp-item';
+        canvas.title = `${pack}：${labels[pack]} · ${cropState.fit === 'cover' ? '铺满' : '容纳'} · ${cropState.size}px`;
+        const cap = document.createElement('small');
+        cap.textContent = pack;
+        cell.appendChild(canvas);
+        cell.appendChild(cap);
+        box.appendChild(cell);
+      }
+      return box;
+    }
+
     function renderQueue() {
       const list = $('fileList');
       list.innerHTML = '';
       queue.forEach((item, idx) => {
         const el = document.createElement('div');
         el.className = 'file-item';
-        el.innerHTML = `
-          <img src="${item.preview}" alt="" />
-          <div class="meta">
+        el.appendChild(buildPreview(item));
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.innerHTML = `
             <small>JSON 显示名</small>
             <input type="text" data-k="displayName" data-i="${idx}" value="${escapeAttr(item.displayName)}" />
             <small style="display:block;margin-top:4px">文件名（不含扩展名）</small>
             <input type="text" data-k="fileName" data-i="${idx}" value="${escapeAttr(item.fileName)}" />
-          </div>
-          <button type="button" data-rm="${idx}">移除</button>
         `;
+        el.appendChild(meta);
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.dataset.rm = String(idx);
+        rm.textContent = '移除';
+        el.appendChild(rm);
         list.appendChild(el);
       });
       $('btnUpload').disabled = queue.length === 0;
@@ -740,24 +1021,36 @@
       return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
     }
 
-    function addFiles(fileList) {
+    async function addFiles(fileList) {
       const files = Array.from(fileList || []).filter((f) => f.type.startsWith('image/') || /\.png$/i.test(f.name));
       if (!files.length) {
         log('没有可用的图片文件', 'warn');
         return;
       }
+      let added = 0;
       for (const file of files) {
         const base = sanitizeBaseName(file.name);
         const preview = URL.createObjectURL(file);
+        // 预解码为 img，供上传时按图包形状裁图
+        let img = null;
+        try {
+          img = await loadImageElement(preview);
+        } catch (e) {
+          log(`跳过无法解码的文件：${file.name}`, 'warn');
+          URL.revokeObjectURL(preview);
+          continue;
+        }
         queue.push({
           file,
           displayName: base,
           fileName: base,
           preview,
+          img,
         });
+        added++;
       }
       renderQueue();
-      log(`已加入 ${files.length} 个文件，队列共 ${queue.length} 个`, 'info');
+      if (added) log(`已加入 ${added} 个文件，队列共 ${queue.length} 个`, 'info');
     }
 
     // —— GitHub 内容读写 ——
@@ -957,12 +1250,31 @@
           const ext = extOf(item.file) === 'jpg' ? 'jpg' : (extOf(item.file) === 'jpeg' ? 'jpg' : 'png');
           // 强制 png 扩展名以匹配现有规范；若是其他格式仍用原扩展
           const fileExt = /\.png$/i.test(item.file.name) || item.file.type === 'image/png' ? 'png' : ext;
-          const diskName = `${item.fileName}.${fileExt}`;
-          const b64 = await fileToBase64(item.file);
+          // 开启裁图后一律输出 png；未开启时沿用原扩展名
+          const diskExt = cropState.enabled ? 'png' : fileExt;
+          const diskName = `${item.fileName}.${diskExt}`;
+          // 未裁图时，各图包共用同一份原图 base64，避免重复编码
+          const rawB64 = cropState.enabled ? null : await fileToBase64(item.file);
 
           for (const pack of packs) {
             const imgPath = `${pack}/icon/${diskName}`;
-            log(`上传 ${imgPath}（显示名: ${item.displayName}）…`, 'info');
+            // 按图包形状裁图：Fang=圆角，Yuan=正圆
+            let b64;
+            if (cropState.enabled && item.img) {
+              const shape = PACK_SHAPE[pack] || 'circle';
+              const canvas = renderToCanvas(item.img, {
+                size: cropState.size,
+                shape,
+                fit: cropState.fit,
+                cornerRatio: cropState.cornerRatio,
+              });
+              const pngFile = await canvasToPngFile(canvas, item.fileName);
+              b64 = await fileToBase64(pngFile);
+              log(`上传 ${imgPath}（${shape === 'circle' ? '正圆' : '圆角'} ${cropState.size}px，显示名: ${item.displayName}）…`, 'info');
+            } else {
+              b64 = rawB64;
+              log(`上传 ${imgPath}（原图，显示名: ${item.displayName}）…`, 'info');
+            }
 
             let sha;
             try {
@@ -1537,8 +1849,41 @@
       renderQueue();
     });
 
+    // —— 裁图设置交互 ——
+    function syncCropUI() {
+      $('cropBody').classList.toggle('disabled', !cropState.enabled);
+      renderQueue();
+    }
+    $('cropEnable').addEventListener('change', (e) => {
+      cropState.enabled = e.target.checked;
+      syncCropUI();
+    });
+    $('cropSizes').addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      cropState.size = Number(btn.dataset.size);
+      $('cropSizes').querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c === btn));
+    });
+    $('cropFits').addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      cropState.fit = btn.dataset.fit;
+      $('cropFits').querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c === btn));
+      renderQueue(); // 裁切方式影响预览
+    });
+    $('cropCorner').addEventListener('input', (e) => {
+      const pct = Number(e.target.value);
+      cropState.cornerRatio = pct / 100;
+      $('cropCornerVal').textContent = `${pct}%`;
+      renderQueue(); // 圆角半径影响 Fang 预览
+    });
+    // 切换目标图包 → 刷新预览（裁图开启时按图包各出一版）
+    $('packFang').addEventListener('change', renderQueue);
+    $('packYuan').addEventListener('change', renderQueue);
+    syncCropUI();
+
     loadSettings();
-    log('就绪。配置 Token 后点「测试连接」，再拖入图片上传。', 'info');
+    log('就绪。配置 Token 后点「测试连接」，再拖入图片上传。默认开启本地裁图：Fang 出圆角、Yuan 出正圆。', 'info');
   </script>
 </body>
 </html>
