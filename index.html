@@ -265,6 +265,7 @@
       padding-right: 4px;
     }
     .g-item {
+      position: relative;
       background: var(--panel-2);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -285,6 +286,39 @@
       word-break: break-all;
     }
     .g-item.own .name { color: var(--accent-2); }
+    .g-item .del {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,107,122,.45);
+      background: rgba(15,17,21,.85);
+      color: var(--danger);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .12s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .g-item:hover .del,
+    .g-item .del:focus {
+      opacity: 1;
+    }
+    .g-item .del:hover {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+    .g-item.deleting {
+      opacity: .45;
+      pointer-events: none;
+    }
     .hint {
       margin-top: 10px;
       color: var(--muted);
@@ -375,7 +409,7 @@
           <input id="gallerySearch" type="text" placeholder="搜索名称…" />
           <button class="ghost" type="button" id="btnRefreshGallery">刷新</button>
         </div>
-        <p class="hint" id="galleryMeta">连接后可加载 icon 目录与 JSON 条目。</p>
+        <p class="hint" id="galleryMeta">连接后可加载 icon 目录与 JSON 条目。悬停图标可删除（同步移除 JSON 条目）。</p>
         <div class="gallery" id="gallery"></div>
       </section>
     </div>
@@ -583,6 +617,49 @@
       return gh(`/repos/${owner}/${name}/contents/${encPath(path)}?ref=${encodeURIComponent(branch)}`);
     }
 
+    /** 删除仓库中的文件 */
+    async function deleteContent(path, sha, message) {
+      const { owner, name } = ownerRepo();
+      const { branch } = getConfig();
+      return gh(`/repos/${owner}/${name}/contents/${encPath(path)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, sha, branch }),
+      });
+    }
+
+    /** 使 JSON 缓存失效，下次 ensureJson 会重新拉取 */
+    function invalidateJson(pack) {
+      if (pack) jsonCache[pack] = null;
+      else jsonCache = { Fang: null, Yuan: null };
+    }
+
+    /**
+     * 从 icons 数组中移除与指定文件相关的条目。
+     * 优先按 url 路径匹配（兼容 name ≠ 文件名 的情况），
+     * 同时移除 name 与文件名 stem 相同且指向本仓库该图包的条目。
+     */
+    function removeIconsForFile(icons, pack, fileName) {
+      const stem = fileName.replace(/\.[^.]+$/, '');
+      const pathNeedle = `/${pack}/icon/${fileName}`.toLowerCase();
+      const before = icons.length;
+      const next = icons.filter((item) => {
+        const url = String(item.url || '').toLowerCase();
+        // url 指向该文件 → 删除
+        if (url.includes(pathNeedle)) return false;
+        // name 匹配且 url 属于本仓库该图包 → 删除
+        if (
+          String(item.name || '').toLowerCase() === stem.toLowerCase() &&
+          url.includes(`/${pack.toLowerCase()}/icon/`) &&
+          (url.includes('xyysjd') || url.includes(ownerRepo().name.toLowerCase()))
+        ) {
+          return false;
+        }
+        return true;
+      });
+      return { icons: next, removed: before - next.length };
+    }
+
     function decodeBase64Utf8(b64) {
       const bin = atob(b64.replace(/\n/g, ''));
       const bytes = new Uint8Array(bin.length);
@@ -766,31 +843,99 @@
           return;
         }
         let icons = files.filter((f) => f.type === 'file' && /\.(png|jpe?g|webp|gif)$/i.test(f.name));
-        // 尝试拿 json 判断 own
-        let ownNames = new Set();
+        // 尝试拿 json 判断 own；并建立 文件名 → json 显示名 映射
+        let ownFileNames = new Set();
         try {
           const j = await ensureJson(pack);
           j.data.icons
-            .filter((i) => i.url && i.url.includes('xyysjd'))
-            .forEach((i) => ownNames.add(i.name.toLowerCase()));
+            .filter((i) => i.url && (i.url.includes('xyysjd') || i.url.includes(`/${pack}/icon/`)))
+            .forEach((i) => {
+              ownFileNames.add(String(i.name || '').toLowerCase());
+              const m = String(i.url).match(/\/([^/]+\.(?:png|jpe?g|webp|gif))(?:\?|$)/i);
+              if (m) ownFileNames.add(m[1].replace(/\.[^.]+$/, '').toLowerCase());
+            });
         } catch (_) {}
 
         if (q) icons = icons.filter((f) => f.name.toLowerCase().includes(q));
-        $('galleryMeta').textContent = `${pack}/icon 共 ${files.filter(f=>f.type==='file').length} 个文件，展示 ${icons.length} 个`;
+        $('galleryMeta').textContent = `${pack}/icon 共 ${files.filter(f=>f.type==='file').length} 个文件，展示 ${icons.length} 个 · 悬停点 × 删除`;
 
         const { owner, name } = ownerRepo();
         const { branch } = getConfig();
         for (const f of icons.sort((a, b) => a.name.localeCompare(b.name))) {
           const stem = f.name.replace(/\.[^.]+$/, '');
-          const isOwn = ownNames.has(stem.toLowerCase());
+          const isOwn = ownFileNames.has(stem.toLowerCase());
           const url = `${RAW_BASE(owner, name, branch)}/${pack}/icon/${f.name}?t=${Date.now()}`;
           const el = document.createElement('div');
           el.className = 'g-item' + (isOwn ? ' own' : '');
-          el.innerHTML = `<img src="${url}" alt="${escapeAttr(stem)}" loading="lazy" /><div class="name">${escapeAttr(stem)}</div>`;
+          el.dataset.pack = pack;
+          el.dataset.file = f.name;
+          el.dataset.sha = f.sha || '';
+          el.innerHTML =
+            `<button type="button" class="del" title="删除 ${escapeAttr(f.name)}" aria-label="删除 ${escapeAttr(stem)}">×</button>` +
+            `<img src="${url}" alt="${escapeAttr(stem)}" loading="lazy" />` +
+            `<div class="name">${escapeAttr(stem)}</div>`;
           gallery.appendChild(el);
         }
       } catch (e) {
         $('galleryMeta').textContent = e.message || String(e);
+      }
+    }
+
+    /** 删除单个图标：删文件 + 从 tubiao.json 移除条目 */
+    async function deleteIcon(pack, fileName, sha, cardEl) {
+      if (!pack || !fileName) return;
+      const ok = confirm(
+        `确定删除 ${pack}/icon/${fileName}？\n\n将同时：\n1. 删除仓库中的图片文件\n2. 从 ${pack}/tubiao.json 移除对应条目\n\n此操作会直接提交到 GitHub，不可撤销。`
+      );
+      if (!ok) return;
+
+      if (cardEl) cardEl.classList.add('deleting');
+      try {
+        // 1) 删除图片（若未带 sha 则先查）
+        let fileSha = sha;
+        const imgPath = `${pack}/icon/${fileName}`;
+        if (!fileSha) {
+          log(`查询 ${imgPath} …`, 'info');
+          const existing = await getContent(imgPath);
+          fileSha = existing.sha;
+        }
+        log(`删除 ${imgPath} …`, 'info');
+        await deleteContent(imgPath, fileSha, `删除图标 ${pack}/${fileName}`);
+        log(`  ✓ 图片已删除`, 'ok');
+
+        // 2) 更新 JSON：强制重新拉取最新 sha，避免冲突
+        invalidateJson(pack);
+        const j = await ensureJson(pack);
+        const result = removeIconsForFile(j.data.icons, pack, fileName);
+        j.data.icons = result.icons;
+
+        if (result.removed > 0) {
+          const latest = await getContent(j.path);
+          j.sha = latest.sha;
+          // 用最新内容重新算一次，防止中间有人改过
+          const latestData = JSON.parse(decodeBase64Utf8(latest.content));
+          const result2 = removeIconsForFile(latestData.icons, pack, fileName);
+          latestData.icons = result2.icons;
+          const pretty = JSON.stringify(latestData, null, '\t');
+          const text = pretty.endsWith('\n') ? pretty : pretty + '\n';
+          const b64 = encodeUtf8Base64(text);
+          log(`更新 ${j.path}（移除 ${result2.removed} 条）…`, 'info');
+          await putContent(j.path, b64, `从 ${pack}/tubiao.json 移除 ${fileName}`, j.sha);
+          invalidateJson(pack);
+          log(`  ✓ JSON 已更新`, 'ok');
+        } else {
+          log(`  JSON 中未找到指向 ${fileName} 的条目，跳过 JSON 更新`, 'warn');
+          invalidateJson(pack);
+        }
+
+        log(`删除完成：${pack}/${fileName}`, 'ok');
+        setStatus('ok', '已删除');
+        await refreshGallery();
+      } catch (e) {
+        console.error(e);
+        log(e.message || String(e), 'err');
+        setStatus('err', '删除失败');
+        if (cardEl) cardEl.classList.remove('deleting');
       }
     }
 
@@ -809,6 +954,17 @@
     $('gallerySearch').addEventListener('input', () => {
       clearTimeout(window.__gs);
       window.__gs = setTimeout(refreshGallery, 250);
+    });
+
+    // 图标一览：删除按钮（事件委托）
+    $('gallery').addEventListener('click', (e) => {
+      const btn = e.target.closest('.del');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const card = btn.closest('.g-item');
+      if (!card || card.classList.contains('deleting')) return;
+      deleteIcon(card.dataset.pack, card.dataset.file, card.dataset.sha, card);
     });
 
     const drop = $('dropZone');
