@@ -3,22 +3,6 @@
 	"description": "自用图标包，图标按服名或群名命名，按 A-Z 排列，方便查找。Fileball 可在图标搜索框搜索图标名。",
 	"icons": [
 		{
-			"name": "BTYIN",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/BTYIN.png"
-		},
-		{
-			"name": "BTYIN1",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/BTYIN1.png"
-		},
-		{
-			"name": "CineTrail",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/CineTrail.png"
-		},
-		{
-			"name": "Coco",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Coco.png"
-		},
-		{
 			"name": "eoos",
 			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/eoos.png"
 		},
@@ -31,72 +15,12 @@
 			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/feimu.png"
 		},
 		{
-			"name": "Feiyue1",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Feiyue.png"
-		},
-		{
-			"name": "Feiyue2",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Feiyue1.png"
-		},
-		{
-			"name": "feniu",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/feniu.png"
-		},
-		{
-			"name": "Fyyh",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Fyyh.png"
-		},
-		{
 			"name": "hohai",
 			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/hohai.png"
 		},
 		{
 			"name": "hohai2",
 			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/hohai2.png"
-		},
-		{
-			"name": "Houyinx",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Houyinx.png"
-		},
-		{
-			"name": "jingzhe",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/jingzhe.png"
-		},
-		{
-			"name": "Laosifu",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Laosifu.png"
-		},
-		{
-			"name": "LEVILDE",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/LEVILDE.png"
-		},
-		{
-			"name": "Msky",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Msky.png"
-		},
-		{
-			"name": "NiceDuck",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/NiceDuck.png"
-		},
-		{
-			"name": "NiceDuck1",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/NiceDuck1.png"
-		},
-		{
-			"name": "NiceDuck1111",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/NiceDuck1111.png"
-		},
-		{
-			"name": "NiceDuckDPX",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/NiceDuckDPX.png"
-		},
-		{
-			"name": "NiceDuckJMS",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/NiceDuckJMS1.png"
-		},
-		{
-			"name": "Qidianzhan",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Qidianzhan.png"
 		},
 		{
 			"name": "shrekpublic",
@@ -111,40 +35,12 @@
 			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/sntp.png"
 		},
 		{
-			"name": "StarCat1",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/StarCat1.png"
-		},
-		{
-			"name": "StarCat2",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/StarCat2.png"
-		},
-		{
-			"name": "Sutang",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Sutang.png"
-		},
-		{
-			"name": "Sutang1",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Sutang1.png"
-		},
-		{
 			"name": "theluyuan",
 			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/theluyuan.png"
 		},
 		{
-			"name": "Tiannanxiaozhu1",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/Tiannanxiaozhu1.png"
-		},
-		{
 			"name": "yuchu",
 			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/yuchu.png"
-		},
-		{
-			"name": "ziyon",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/ziyon.png"
-		},
-		{
-			"name": "ZoxFree",
-			"url": "https://raw.githubusercontent.com/xyysjd/tubiao/main/Yuan/icon/ZoxFree.png"
 		}
 	]
 }
